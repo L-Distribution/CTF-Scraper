@@ -6,6 +6,7 @@
   "author": "Aidan Goettsch <aidangoettsch@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "cli": "^1.0.1",
     "node-fetch": "^2.6.0"
   }
 }
