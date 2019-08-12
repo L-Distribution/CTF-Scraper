@@ -1,8 +1,9 @@
 const fetch = require('node-fetch')
+const https = require('https')
 
 class CTFdScraper {
   constructor (url) {
-    this.apiUrl = `${url}/api/v1`
+    this.url = `${url}`
   }
 
   authenticate (options) {
@@ -16,17 +17,15 @@ class CTFdScraper {
   }
 
   fetchFromCTFd (path) {
-    return new Promise((resolve, reject) => {
-      if (!this.cookie) reject("")
+    if (!this.cookie) return new Promise((resolve, reject) => reject(new Error("Not authenticated")))
 
-      fetch(`${this.apiUrl}/${path}`, {
-        headers: {
-          'Cookie': 'session=' + this.cookie
-        }
-      }).then(res => res.json()).then(res => {
-        if (res.success) resolve(res.data)
-        else reject(res.errors)
-      }).catch(reject)
+    return fetch(`${this.url}/api/v1/${path}`, {
+      headers: {
+        'Cookie': 'session=' + this.cookie
+      }
+    }).then(res => res.json()).then(res => {
+      if (res.success) return res.data
+      else throw new Error(res.errors)
     })
   }
 
@@ -35,16 +34,23 @@ class CTFdScraper {
   }
 
   getChals () {
-    this.fetchFromCTFd('challenges').then(data => {
-      for (const chal of data) {
-        this.getChal(chal.id).then(chalData => {
-          console.log(chalData)
-        }).catch(e => {
-          console.log(e)
-        })
-      }
+    return this.fetchFromCTFd('challenges').then(data =>
+      Promise.all(data.map(chal => this.getChal(chal.id)))
+    )
+  }
+
+  getFile (path) {
+    return new Promise((resolve, reject) => {
+      https.get(this.url + path, {
+        headers: {
+          'Cookie': 'session=' + this.cookie
+        }
+      }, resolve).on('error', e => {
+        reject(new Error(e))
+      })
     })
   }
+
 }
 
 module.exports = CTFdScraper
